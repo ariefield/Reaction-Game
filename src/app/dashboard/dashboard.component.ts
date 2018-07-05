@@ -85,8 +85,8 @@ export class DashboardComponent implements OnInit {
 
   private registerScore( score:number )
   {
-    var rank = this.determineRank( score );
-    if(rank < this.DISPLAY_NUMBER)
+    this.rank = this.determineRank( score );
+    if(this.rank <= this.DISPLAY_NUMBER)
     {
       var sortedArray = this.leaderboard;
       sortedArray.push(score);
@@ -102,21 +102,19 @@ export class DashboardComponent implements OnInit {
 
   private determineRank( score:number )
   {
-    var rank = 1;
+    if(this.leaderboard.length == 0)
+    {
+      return 1;
+    }
+
     for(var i=0;i<this.leaderboard.length;i++)
     {
-      rank = i+1;
       if(score < this.leaderboard[i])
       {
-        break;
-      }
-      else
-      {
-        rank += 1;
+        return i+1;
       }
     }
-    this.rank = rank;
-    return rank;
+    return this.leaderboard.length+1;
   }
 
   //Public functions
