@@ -7,98 +7,149 @@ import { Panel } from '../panel'
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit {
-
   //Constants
-  dashboardWidth:number = 800;
-  dashBoardHeight:number = 600;
-  sideLength:number = 200;
+  DASHBOARD_WIDTH:number = 800;
+  DASHBOARD_HEIGHT:number = 600;
+  SIDE_LENGTH:number = 200;
+  DISPLAY_NUMBER:number = 3;
+  NUM_X:number = this.DASHBOARD_WIDTH / this.SIDE_LENGTH;
+  NUM_Y:number = this.DASHBOARD_HEIGHT / this.SIDE_LENGTH;
+  TOTAL_PANELS = this.NUM_X*this.NUM_Y;
   //Variables
-  dragStatus:string = "Start";
-  dragging:boolean = false;
-  selectedPanel:Panel;
   panels:Panel[] = [];
+  leaderboard:number[] = [];
+  gameRunning:boolean = false;
+  startTime:number = 0;
+  displayTime:number = 0;
+  rank:any = "Unranked";
   
-
   constructor() {
    }
 
-  ngOnInit() {
-    // Initialize values here
-    var numX = this.dashboardWidth / this.sideLength;
-    var numY = this.dashBoardHeight / this.sideLength;
-    var totalNumPanels = numX*numY;
-    for (var i=0;i<totalNumPanels;i++)
+  ngOnInit() {    
+    //Init panels
+    for (var i=0;i<this.TOTAL_PANELS;i++)
     {
       let panel = new Panel();
       panel.id = i;
-      panel.left = this.determineLeftLocation( i, numX );
-      panel.top = this.determineTopLocation( i, numX );
+      panel.left = this.determineLeftLocation( i);
+      panel.top = this.determineTopLocation( i );
       this.panels.push( panel );
     }
-    this.sideLength = this.sideLength;
+    this.SIDE_LENGTH = this.SIDE_LENGTH;
   }
 
   //Private functions
-  private determineLeftLocation( id: number, numX: number )
+  private determineLeftLocation( id: number )
   {
-    return (id % numX) * this.sideLength;
+    return (id % this.NUM_X) * this.SIDE_LENGTH;
   }
 
-  private determineTopLocation( id: number, numX: number )
+  private determineTopLocation( id: number )
   {
-    return Math.floor(id / numX) * this.sideLength;
+    return Math.floor(id / this.NUM_X) * this.SIDE_LENGTH;
   }
 
-  private getRandomColor()
+  private checkFinished()
   {
-    var letters = '0123456789ABCDEF'.split('');
-    var color = '#';
-    for (var i = 0; i < 6; i++){
-        color += letters[Math.floor(Math.random() * 16)];
+    var reset = true;
+    for (var i=0;i<this.panels.length;i++)
+    {
+      if (this.panels[i].colour != "Black" )
+      {
+        reset = false;
+        break;
+      }
     }
-    return color;
+    if (reset == true)
+    {
+      this.gameRunning = false;
+    }
   }
 
-  private swapPanels( panel1:Panel, panel2:Panel)
+  private Loop()
   {
-    var left = panel1.left;
-    var top = panel1.top;
-    panel1.left = panel2.left
-    panel1.top = panel2.top;
-    panel2.left = left
-    panel2.top = top;
+      var time = new Date().getTime() - this.startTime;
+      this.displayTime = time / 1000;
+
+      this.checkFinished();
+      if (this.gameRunning)
+      {
+        requestAnimationFrame(this.Loop.bind(this));
+      }
+      else
+      {
+        this.registerScore(this.displayTime);
+      }
+  }
+
+  private registerScore( score:number )
+  {
+    var rank = this.determineRank( score );
+    if(rank < this.DISPLAY_NUMBER)
+    {
+      var sortedArray = this.leaderboard;
+      sortedArray.push(score);
+      sortedArray.sort((n1,n2) => n1 - n2);
+      if(sortedArray.length > this.DISPLAY_NUMBER)
+      {
+        sortedArray.pop();
+      }
+
+      this.leaderboard = sortedArray;
+    }
+  }
+
+  private determineRank( score:number )
+  {
+    var rank = 1;
+    for(var i=0;i<this.leaderboard.length;i++)
+    {
+      rank = i+1;
+      if(score < this.leaderboard[i])
+      {
+        break;
+      }
+      else
+      {
+        rank += 1;
+      }
+    }
+    this.rank = rank;
+    return rank;
   }
 
   //Public functions
-  public setRandomColor( panel:Panel )
+  public startGame()
   {
-    panel.colour = this.getRandomColor();
-  }
-
-  public onDragStart( panel:Panel ) 
-  {
-    this.selectedPanel = panel;
-    this.dragging = true;
-    this.dragStatus = "started";
-  }
-
-  public onDragOver( panel:Panel ) 
-  {
-    event.preventDefault();
-  }
-
-  public onDragEnd()
-  {
-      this.dragging = false;
-  }
-
-  public onDragDrop( panel:Panel ) 
-  {
-    this.dragStatus = "ended on " + panel.id;
-    if ( panel != this.selectedPanel )
+    this.gameRunning = true;
+    var date = new Date();
+    this.startTime = date.getTime();
+    for (var i=0;i<this.panels.length;i++)
     {
-      this.swapPanels(panel, this.selectedPanel);
+      this.panels[i].colour = "Grey";
+      this.panels[i].prevColour = "Grey";
     }
+    this.Loop();
   }
+
+  public panelClicked( panel:Panel )
+  {
+    panel.colour = "Black";
+    panel.prevColour = "Black";
+    this.checkFinished();
+  }
+
+  public mouseEnter( panel:Panel )
+  {
+    if( panel.colour == "Grey")
+      panel.colour='#530b0b';
+  }
+
+  public mouseExit( panel:Panel )
+  {
+    panel.colour=panel.prevColour;
+  }
+
 
 }

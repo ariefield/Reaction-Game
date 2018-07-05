@@ -7,6 +7,6 @@ import { Panel } from './panel'
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  title = 'Mood Board';
+  title = 'Speed Test';
 
 }
